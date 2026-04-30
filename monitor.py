@@ -1,35 +1,33 @@
-from google import genai # Menggunakan library baru
+from google import genai
 import datetime
 import requests
 import subprocess
-import os
 
-# 1. Konfigurasi Client Gemini Baru
-# Sebaiknya simpan di environment variable, tapi jika ingin hardcode:
+# 1. Konfigurasi Client Baru (Library: google-genai)
+# Segera ganti API Key ini jika sudah Anda revoke/hapus
 client = genai.Client(api_key="AIzaSyBrrzrf0937zB8Hy4MgAhm58PjOxTJsElQ")
 
 def get_ssh_attempts():
     try:
-        # Menambahkan pengecekan jika file log ada
+        # Mengambil 5 baris terakhir percobaan gagal
         result = subprocess.check_output(
             "grep 'Failed password' /var/log/auth.log | tail -n 5",
             shell=True
         )
         return result.decode()
-    except subprocess.CalledProcessError:
-        return "Tidak ada percobaan login gagal yang ditemukan."
+    except Exception:
+        return "Tidak ada percobaan login gagal terbaru."
 
 def get_gemini_analysis(log_text):
     try:
-        # 2. Cara panggil model yang benar pada library baru
+        # 2. Syntax baru untuk memanggil Gemini 1.5 Flash
         response = client.models.generate_content(
             model="gemini-1.5-flash",
-            contents=f"Ada percobaan login brute force:\n{log_text}\nApa yang sebaiknya saya lakukan? Respon dalam Bahasa Indonesia, singkat dan padat."
+            contents=f"Analisa log SSH brute force ini secara singkat: {log_text}. Berikan saran keamanan dalam Bahasa Indonesia."
         )
         return response.text
     except Exception as e:
-        # Ini akan membantu Anda melihat detail error jika terjadi lagi
-        return f"⚠️ Gagal mendapatkan analisis dari Gemini: {str(e)}"
+        return f"⚠️ Error Analisis: {str(e)}"
 
 def send_whatsapp(message):
     token = "xAn512gx3d76L21YJwVp"
@@ -41,21 +39,21 @@ def send_whatsapp(message):
     try:
         r = requests.post("https://api.fonnte.com/send", data=payload, headers=headers)
         return r.status_code
-    except Exception as e:
-        print(f"Error sending WhatsApp: {e}")
-        return None
+    except Exception:
+        return "Gagal kirim WA"
 
-# Eksekusi
-log_content = get_ssh_attempts()
-ai_analysis = get_gemini_analysis(log_content)
+# --- Eksekusi Utama ---
+log_data = get_ssh_attempts()
+ai_result = get_gemini_analysis(log_data)
 
+timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 full_message = (
-    f"📅 {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    f"📅 {timestamp}\n"
     f"⚠️ *PERCOBAAN LOGIN DETECTED!*\n\n"
-    f"```{log_content}```\n\n"
-    f"🤖 *Gemini Analysis:*\n{ai_analysis}\n\n"
-    f"> _Sent via Automonitoring Jenkins_"
+    f"```{log_data}```\n\n"
+    f"🤖 *Gemini Analysis:*\n{ai_result}\n\n"
+    f"> _Sent via Jenkins Monitor_"
 )
 
-status = send_whatsapp(full_message)
-print(f"Status kirim WA: {status}")
+print(full_message)
+send_whatsapp(full_message)
