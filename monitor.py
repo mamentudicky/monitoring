@@ -22,13 +22,14 @@ def get_gemini_analysis(log_text):
     if not GEMINI_KEY:
         return "⚠️ Analisis dilewati: GEMINI_API_KEY tidak diatur."
 
+    # Menggunakan v1beta untuk kompatibilitas model flash yang lebih luas
     client = genai.Client(
         api_key=GEMINI_KEY,
-        http_options={'api_version': 'v1'}
+        http_options={'api_version': 'v1beta'}
     )
     
-    # Mencoba beberapa model jika salah satu tidak ditemukan atau terkena limit
-    models_to_try = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash-8b"]
+    # Mencoba model flash standar
+    models_to_try = ["gemini-1.5-flash", "gemini-1.5-flash-latest"]
     
     last_error = ""
     for model_name in models_to_try:
