@@ -4,7 +4,7 @@ import requests
 import subprocess
 
 # Konfigurasi API Gemini
-genai.configure(api_key="AIzaSyBWq-WTaB0KLl1U0nLE4_TyFiqD4eQzUOc")
+genai.configure(api_key="AIzaSyBrrzrf0937zB8Hy4MgAhm58PjOxTJsElQ")
 
 model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 
