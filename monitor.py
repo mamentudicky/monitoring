@@ -5,7 +5,7 @@ import requests
 import subprocess
 
 # 1. Konfigurasi Client (Mengambil API Key dari Environment Variable)
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyD309N4StITb57jJAwpLdxG_qRll2ziqVU")
 
 def get_ssh_attempts():
     try:
