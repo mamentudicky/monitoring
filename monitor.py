@@ -5,13 +5,7 @@ import requests
 import subprocess
 
 # 1. Konfigurasi Client (Mengambil API Key dari Environment Variable)
-# Pastikan Anda telah mengatur GEMINI_API_KEY di environment server/Jenkins Anda.
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyBWq-WTaB0KLl1U0nLE4_TyFiqD4eQzUOc")
-
-client = genai.Client(
-    api_key=GEMINI_KEY,
-    http_options={'api_version': 'v1'}
-)
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 def get_ssh_attempts():
     try:
@@ -25,8 +19,16 @@ def get_ssh_attempts():
         return "Tidak ada percobaan login gagal terbaru."
 
 def get_gemini_analysis(log_text):
-    # Mencoba beberapa model jika salah satu tidak ditemukan (404)
-    models_to_try = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash"]
+    if not GEMINI_KEY:
+        return "⚠️ Analisis dilewati: GEMINI_API_KEY tidak diatur."
+
+    client = genai.Client(
+        api_key=GEMINI_KEY,
+        http_options={'api_version': 'v1'}
+    )
+    
+    # Mencoba beberapa model jika salah satu tidak ditemukan atau terkena limit
+    models_to_try = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-flash-8b"]
     
     last_error = ""
     for model_name in models_to_try:
@@ -39,10 +41,12 @@ def get_gemini_analysis(log_text):
         except Exception as e:
             last_error = str(e)
             if "404" in last_error:
-                continue # Coba model berikutnya
-            return f"⚠️ Error Analisis ({model_name}): {last_error}"
+                continue # Coba model lain
+            if "429" in last_error:
+                return "⚠️ Quota Terlampaui: Terlalu banyak permintaan ke Gemini. Silakan tunggu beberapa saat."
+            return f"⚠️ Error ({model_name}): {last_error}"
             
-    return f"⚠️ Error Analisis: Tidak ada model yang tersedia ({last_error})"
+    return f"⚠️ Analisis Gagal: {last_error}"
 
 def send_whatsapp(message):
     # Mengambil token Fonnte dari environment variable
