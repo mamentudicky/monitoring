@@ -6,7 +6,7 @@ import subprocess
 # Konfigurasi API Gemini
 genai.configure(api_key="AIzaSyD309N4StITb57jJAwpLdxG_qRll2ziqVU")
 
-model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-1.0-pro")
 
 def get_ssh_attempts():
     result = subprocess.check_output(
