@@ -2,40 +2,100 @@ from google import genai
 import datetime
 import requests
 import subprocess
+import os
+import sys
 
-# Konfigurasi API Gemini
-genai.configure(api_key="AIzaSyBrrzrf0937zB8Hy4MgAhm58PjOxTJsElQ")
+# ================= CONFIG =================
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
+FONNTE_TOKEN = os.environ.get("FONNTE_TOKEN")
+TARGET_PHONE = os.environ.get("TARGET_PHONE", "6281543330656")
 
-model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+client = genai.Client(api_key=GEMINI_KEY)
+
+# ================= FUNCTION =================
 
 def get_ssh_attempts():
-    result = subprocess.check_output(
-        "grep 'Failed password' /var/log/auth.log | tail -n 10",
-        shell=True
-    )
-    return result.decode()
+    try:
+        result = subprocess.check_output(
+            "grep 'Failed password' /var/log/auth.log | tail -n 10",
+            shell=True,
+            stderr=subprocess.DEVNULL
+        )
+        return result.decode().strip() or "Tidak ada percobaan login."
+    except Exception as e:
+        return f"Error baca log: {e}"
+
 
 def get_gemini_analysis(log_text):
+    if not GEMINI_KEY:
+        return "⚠️ GEMINI_API_KEY tidak diatur."
+
     try:
-        response = model.generate_content(
-            f"Ada percobaan login brute force:\n{log_text}\nApa yang sebaiknya saya lakukan?. responnya jangan terlalu panjang"
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=f"""
+            Kamu adalah security analyst.
+
+            Analisa log brute force SSH berikut secara singkat.
+            Berikan maksimal 3 tindakan yang harus dilakukan.
+
+            {log_text}
+            """
         )
-        return response.text
+
+        return response.text.strip()
+
     except Exception as e:
-        return f"⚠️ Gagal mendapatkan analisis dari Gemini: {e}"
+        return f"⚠️ Error Gemini: {e}"
+
 
 def send_whatsapp(message):
-    token = "xAn512gx3d76L21YJwVp"
+    if not FONNTE_TOKEN:
+        return "⚠️ Token Fonnte tidak diatur."
+
     payload = {
-        "target": "6281543330656",
+        "target": TARGET_PHONE,
         "message": message,
     }
-    headers = {"Authorization": token}
-    r = requests.post("https://api.fonnte.com/send", data=payload, headers=headers)
-    return r.status_code
 
-# Eksekusi semua
-log = get_ssh_attempts()
-ai_response = get_gemini_analysis(log)
-full_message = f"{datetime.datetime.now()} ⚠️ Percobaan Login Detected!\n\n{log}\n\n🤖 Gemini says:\n{ai_response}"
-send_whatsapp(full_message)
+    headers = {"Authorization": FONNTE_TOKEN}
+
+    try:
+        r = requests.post(
+            "https://api.fonnte.com/send",
+            data=payload,
+            headers=headers,
+            timeout=10
+        )
+        return r.status_code
+    except Exception as e:
+        return f"Gagal kirim WA: {e}"
+
+
+# ================= MAIN =================
+
+def main():
+    log = get_ssh_attempts()
+    ai_response = get_gemini_analysis(log)
+
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    message = (
+        f"📅 {timestamp}\n"
+        f"⚠️ *PERCOBAAN LOGIN DETECTED!*\n\n"
+        f"```{log}```\n\n"
+        f"🤖 *Gemini Analysis:*\n{ai_response}"
+    )
+
+    print(message)
+
+    status = send_whatsapp(message)
+    print(f"[WA STATUS] {status}")
+
+    # ❗ Biar Jenkins fail kalau AI error
+    if "⚠️" in ai_response:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
