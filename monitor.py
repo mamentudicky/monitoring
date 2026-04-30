@@ -6,8 +6,8 @@ import os
 import sys
 
 # ================= CONFIG =================
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
-FONNTE_TOKEN = os.environ.get("FONNTE_TOKEN")
+GEMINI_KEY = os.environ.get("AIzaSyBrrzrf0937zB8Hy4MgAhm58PjOxTJsElQ")
+FONNTE_TOKEN = os.environ.get("xAn512gx3d76L21YJwVp")
 TARGET_PHONE = os.environ.get("TARGET_PHONE", "6281543330656")
 
 client = genai.Client(api_key=GEMINI_KEY)
