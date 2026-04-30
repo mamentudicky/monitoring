@@ -6,7 +6,7 @@ import subprocess
 
 # 1. Konfigurasi Client (Mengambil API Key dari Environment Variable)
 # Pastikan Anda telah mengatur GEMINI_API_KEY di environment server/Jenkins Anda.
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyBrrzrf0937zB8Hy4MgAhm58PjOxTJsElQ")
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyBWq-WTaB0KLl1U0nLE4_TyFiqD4eQzUOc")
 
 client = genai.Client(
     api_key=GEMINI_KEY,
