@@ -4,8 +4,10 @@ import requests
 import subprocess
 
 # 1. Konfigurasi Client Baru (Library: google-genai)
-# Segera ganti API Key ini jika sudah Anda revoke/hapus
-client = genai.Client(api_key="AIzaSyBrrzrf0937zB8Hy4MgAhm58PjOxTJsElQ")
+client = genai.Client(
+    api_key="AIzaSyBrrzrf0937zB8Hy4MgAhm58PjOxTJsElQ",
+    http_options={'api_version': 'v1'}
+)
 
 def get_ssh_attempts():
     try:
@@ -19,15 +21,24 @@ def get_ssh_attempts():
         return "Tidak ada percobaan login gagal terbaru."
 
 def get_gemini_analysis(log_text):
-    try:
-        # 2. Syntax baru untuk memanggil Gemini 1.5 Flash
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=f"Analisa log SSH brute force ini secara singkat: {log_text}. Berikan saran keamanan dalam Bahasa Indonesia."
-        )
-        return response.text
-    except Exception as e:
-        return f"⚠️ Error Analisis: {str(e)}"
+    # Mencoba beberapa model jika salah satu tidak ditemukan (404)
+    models_to_try = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-2.0-flash"]
+    
+    last_error = ""
+    for model_name in models_to_try:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=f"Analisa log SSH brute force ini secara singkat: {log_text}. Berikan saran keamanan dalam Bahasa Indonesia."
+            )
+            return response.text
+        except Exception as e:
+            last_error = str(e)
+            if "404" in last_error:
+                continue # Coba model berikutnya
+            return f"⚠️ Error Analisis ({model_name}): {last_error}"
+            
+    return f"⚠️ Error Analisis: Tidak ada model yang tersedia ({last_error})"
 
 def send_whatsapp(message):
     token = "xAn512gx3d76L21YJwVp"
