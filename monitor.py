@@ -1,11 +1,15 @@
 from google import genai
+import os
 import datetime
 import requests
 import subprocess
 
-# 1. Konfigurasi Client Baru (Library: google-genai)
+# 1. Konfigurasi Client (Mengambil API Key dari Environment Variable)
+# Pastikan Anda telah mengatur GEMINI_API_KEY di environment server/Jenkins Anda.
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyBrrzrf0937zB8Hy4MgAhm58PjOxTJsElQ")
+
 client = genai.Client(
-    api_key="AIzaSyBrrzrf0937zB8Hy4MgAhm58PjOxTJsElQ",
+    api_key=GEMINI_KEY,
     http_options={'api_version': 'v1'}
 )
 
@@ -41,7 +45,8 @@ def get_gemini_analysis(log_text):
     return f"⚠️ Error Analisis: Tidak ada model yang tersedia ({last_error})"
 
 def send_whatsapp(message):
-    token = "xAn512gx3d76L21YJwVp"
+    # Mengambil token Fonnte dari environment variable
+    token = os.environ.get("FONNTE_TOKEN", "xAn512gx3d76L21YJwVp") # Fallback ke token lama jika belum diatur
     payload = {
         "target": "081543330656",
         "message": message,
